@@ -58,8 +58,9 @@ jobs:
       - name: Smoke test
         run: npm test
 
-      # 临时诊断：确认 id-token 权限是否真的下发，并让 npm 打印 OIDC 细节。
-      - name: Diagnose OIDC environment
+      # OIDC 出问题时（例如 npm 侧没配 Trusted Publisher）先看这里：
+      # 能确认 id-token 权限是否真的下发，避免误判成 npm 配置问题。
+      - name: Print environment
         run: |
           echo "node: $(node --version)"
           echo "npm:  $(npm --version)"
@@ -68,9 +69,10 @@ jobs:
 
       # prepare（构建 lib/）与 prepublishOnly（typecheck + 测试）会在这里再跑一遍。
       # OIDC 下 provenance 自动生成，无需 --provenance。
+      # verbose 日志会打出 registry 拒绝交换时的具体原因。
       - name: Publish to npm (trusted publishing)
         env:
-          NPM_CONFIG_LOGLEVEL: silly
+          NPM_CONFIG_LOGLEVEL: verbose
         run: npm publish --access public
 
       # npm pack 会先跑 prepare（tsc + esbuild），附件里因此带有 lib/。
