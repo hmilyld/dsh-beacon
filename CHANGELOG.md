@@ -5,14 +5,19 @@
 
 ## [未发布]
 
+### 变更
+
+- npm 发布改用 **Trusted Publishing（OIDC）**，不再使用 `NPM_TOKEN` secret。
+  原因：npm 正在淘汰 bypass-2FA 的 granular token，2026-07 起其已不能做账号/包管理，
+  官方公告 2027-01 起连 direct publish 也会取消。
+
 ## [0.2.0] - 2026-10-03
 
 ### 变更
 
 - 包名由 `dsh-beacon` 改为 **`@hmilyld/dsh-beacon`**：npm 上的 `dsh-beacon` 已被他人占用，
   改用带 scope 的名字才能发布。Loader 条目 id 与设置命名空间仍是 `dsh-beacon`，**已保存的配置不受影响**。
-- 发版流程加入 npm 发布（GitHub Actions，`id-token: write` + `--provenance`）：
-  需在仓库配置 secret `NPM_TOKEN`；未配置时自动跳过，GitHub Release 照常创建。
+- 发版流程加入 npm 发布（GitHub Actions，`id-token: write`，provenance 自动生成）。
 
 ### 新增
 

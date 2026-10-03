@@ -212,32 +212,39 @@ dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.2.0
 
 或在桌面版插件管理页填包名 / GitHub 地址 / Release 附件的 `.tgz` 绝对路径。
 
-### npm 发布的一次性配置
+### npm 发布机制：Trusted Publishing（OIDC）
 
-发布需要仓库 secret `NPM_TOKEN`。注意 npm 的 **classic token 已于 2025-11-19 永久吊销**，
-现在只能在网页创建 **Granular Access Token**（[变更说明](https://github.blog/changelog/2025-11-05-npm-security-update-classic-token-creation-disabled-and-granular-token-changes/)）：
+发布走 **Trusted Publishing**，CI 里不需要任何 token，provenance 自动生成：
 
-1. 打开 https://www.npmjs.com/settings/~/tokens → Generate New Token → **Granular Access Token**；
-2. Permissions 选 **Read and write**；Packages and scopes 选 **All packages**（首次发布时包还不存在）；
-3. **勾选 Bypass 2FA**（CI 非交互发布必需，默认不勾）；有效期最长 90 天；
-4. 生成后存入仓库：
+- **不用 `NPM_TOKEN`**：npm 正在淘汰 bypass-2FA 的 granular token——2026-07 起它已不能做账号/包管理，
+  官方公告明确 **2027-01 起连 direct publish 也会取消**，只保留「读取私有包 + 暂存发布」。
+  （[2026-07-31 公告](https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/)）
+- workflow 里 `permissions: id-token: write`，`run: npm publish`（不加 `--provenance`，OIDC 下自动生成）。
+
+**一次性配置**（首次发布之后才能配，因为入口在包设置页）：
+
+1. 先把包发上去（见下方「首次发布」）；
+2. 打开 `https://www.npmjs.com/package/@hmilyld/dsh-beacon` → **Settings** → **Trusted Publisher**；
+3. 选 **GitHub Actions**，填：Organization/user `hmilyld`、Repository `dsh-beacon`、
+   Workflow filename `release.yml`、Environment **留空**；
+4. 之后每次推 `v*` 标签都会自动发布，无需任何 secret。
+
+> npm 的这个设置入口有时不好找（[npm/cli#8910](https://github.com/npm/cli/issues/8910) 仍开着）；
+> 若找不到，可在 npm 的包设置页里搜 "Trusted Publisher"，或从上方链接进入。
+
+**首次发布**（包还不存在，无法先配 Trusted Publisher，需要一次交互式发布）：
 
 ```bash
-gh secret set NPM_TOKEN --repo hmilyld/dsh-beacon   # 交互式粘贴，别写进 shell 历史
+# 本机已 npm login 的话：会提示输入 OTP（发布强制 2FA）
+npm publish --registry=https://registry.npmjs.org/ --access public
 ```
 
-- 未配置该 secret 时，工作流会**跳过 npm 发布**并打一条 notice，GitHub Release 照常创建；
-  配好之后在 Actions 里 **Re-run** 该次运行即可补发。
-- scope `@hmilyld` 必须属于你的 npm 账号或组织，否则发布会 403；npm 用户名不同的话，
-  按「安装」一节的说明改三处名字。
-- 首次发布带 scope 的包需要 `--access public`（已通过 `publishConfig` + 命令行显式给出）。
-- token 90 天过期后需重新生成并覆盖 secret；想免维护可改用
-  [Trusted Publishing（OIDC）](https://docs.npmjs.com/trusted-publishers)（需包已存在，且 CI 的 npm ≥ 11.5.1）。
+发完再按上面第 2~4 步配置 Trusted Publisher，后续版本就全自动了。
+首次发布的这个版本不会有 provenance 标记，之后的版本都会带。
 
 > **用国内镜像的机器**：`~/.npmrc` 里 `registry=https://registry.npmmirror.com` 对安装没问题，
-> 但 npmmirror 是**只读镜像**，没有登录与发布端点。要么走上面的 CI 发布（无需本机登录），
-> 要么本机发布时显式指向官方源：`npm login --registry=https://registry.npmjs.org/`、
-> `npm publish --registry=https://registry.npmjs.org/`。
+> 但 npmmirror 是**只读镜像**，没有登录与发布端点。本机发布/登录必须显式指向官方源
+> （如上一条命令的 `--registry`）。
 
 CI 见 `.github/workflows/ci.yml`（main 推送与 PR 上跑 typecheck + 冒烟测试）。
 
