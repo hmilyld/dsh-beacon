@@ -214,11 +214,16 @@ dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.2.0
 
 ### npm 发布的一次性配置
 
-发布需要仓库 secret `NPM_TOKEN`（npm automation token，勾选 publish 权限）：
+发布需要仓库 secret `NPM_TOKEN`。注意 npm 的 **classic token 已于 2025-11-19 永久吊销**，
+现在只能在网页创建 **Granular Access Token**（[变更说明](https://github.blog/changelog/2025-11-05-npm-security-update-classic-token-creation-disabled-and-granular-token-changes/)）：
+
+1. 打开 https://www.npmjs.com/settings/~/tokens → Generate New Token → **Granular Access Token**；
+2. Permissions 选 **Read and write**；Packages and scopes 选 **All packages**（首次发布时包还不存在）；
+3. **勾选 Bypass 2FA**（CI 非交互发布必需，默认不勾）；有效期最长 90 天；
+4. 生成后存入仓库：
 
 ```bash
-# 在 https://www.npmjs.com/settings/<你的用户名>/tokens 生成 Automation token
-gh secret set NPM_TOKEN --repo hmilyld/dsh-beacon
+gh secret set NPM_TOKEN --repo hmilyld/dsh-beacon   # 交互式粘贴，别写进 shell 历史
 ```
 
 - 未配置该 secret 时，工作流会**跳过 npm 发布**并打一条 notice，GitHub Release 照常创建；
@@ -226,6 +231,13 @@ gh secret set NPM_TOKEN --repo hmilyld/dsh-beacon
 - scope `@hmilyld` 必须属于你的 npm 账号或组织，否则发布会 403；npm 用户名不同的话，
   按「安装」一节的说明改三处名字。
 - 首次发布带 scope 的包需要 `--access public`（已通过 `publishConfig` + 命令行显式给出）。
+- token 90 天过期后需重新生成并覆盖 secret；想免维护可改用
+  [Trusted Publishing（OIDC）](https://docs.npmjs.com/trusted-publishers)（需包已存在，且 CI 的 npm ≥ 11.5.1）。
+
+> **用国内镜像的机器**：`~/.npmrc` 里 `registry=https://registry.npmmirror.com` 对安装没问题，
+> 但 npmmirror 是**只读镜像**，没有登录与发布端点。要么走上面的 CI 发布（无需本机登录），
+> 要么本机发布时显式指向官方源：`npm login --registry=https://registry.npmjs.org/`、
+> `npm publish --registry=https://registry.npmjs.org/`。
 
 CI 见 `.github/workflows/ci.yml`（main 推送与 PR 上跑 typecheck + 冒烟测试）。
 
