@@ -1,0 +1,53 @@
+name: Release
+
+# 打 v* 标签即发版：校验标签与 package.json 版本一致，构建并跑测试，
+# 然后把带预构建 lib/ 的 .tgz 作为 GitHub Release 附件发布。
+#
+# 安装端可以直接用该标签或附件：
+#   dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.1.0
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify tag matches package.json version
+        run: |
+          expected="v$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json version $expected"
+            exit 1
+          fi
+
+      - name: Install
+        run: npm install --legacy-peer-deps
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Smoke test
+        run: npm test
+
+      # npm pack 会先跑 prepare（tsc + esbuild），附件里因此带有 lib/。
+      - name: Pack
+        run: npm pack
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dsh-beacon-*.tgz \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes

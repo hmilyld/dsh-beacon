@@ -25,20 +25,48 @@ DSH（DeepSeek Harness）Web 插件：当**任务完成**，或 Agent 需要用�
 
 ## 安装
 
-```bash
-# 本地 checkout
-dsh plugin --profile <name> add /path/to/dsh-beacon
+仓库公开，无需任何凭据：
 
-# 或 git 安装（prepare 脚本自动执行 tsc 构建；
-# pnpm 首次可能要求在 profiles/<name>/pnpm-workspace.yaml 的 allowBuilds 中放行）
-dsh plugin --profile <name> add github:<owner>/dsh-beacon
+```bash
+# GitHub 安装（prepare 脚本自动执行 tsc + esbuild 构建 lib/）
+dsh plugin --profile <name> add github:hmilyld/dsh-beacon
+
+# 锁到某个发布标签
+dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.1.0
+
+# 本地 checkout（pnpm link: 符号链接，需先自行 npm install + npm run build）
+dsh plugin --profile <name> add /path/to/dsh-beacon
 ```
+
+> pnpm 默认拦下安装脚本（本包的 `prepare` 与 esbuild 的安装脚本）。首次安装若被拦，
+> 按 pnpm 提示把包名加入 `profiles/<name>/pnpm-workspace.yaml` 的 `allowBuilds` 后重试；
+> 在桌面版插件管理页里则是点「允许这些脚本并重试」。
 
 安装会把本包的 bundle 层（`cordis.patch.yml`）加入 profile。验证组合结果：
 
 ```bash
 dsh --profile <name> --dump-config   # 应能看到 "# == dsh-beacon" 层
 ```
+
+### 在 DSH 桌面版里安装
+
+桌面版的 `desktop` profile 由 Electron 独占，npm 版 CLI 会拒绝管理它
+（`dsh plugin --profile desktop ...` 报 `profile "desktop" is managed exclusively by the Electron application`），
+请改用应用内的**插件管理页 → 添加插件**。该页面支持四种来源，按推荐程度：
+
+| 来源 | 填法 | 说明 |
+| --- | --- | --- |
+| GitHub 仓库地址 | `github:hmilyld/dsh-beacon` | 最省事；需要那台机器能直连 github.com 或配好代理，装完按提示允许安装脚本 |
+| 压缩包 | `npm pack` 产出的 `dsh-beacon-<版本>.tgz` 的**绝对路径** | 包内已带 `lib/`，不触发构建脚本；适合离线或网络受限的机器 |
+| 本地目录 | 解压/克隆后的目录**绝对路径** | 该目录需自带 `lib/` 且运行时依赖可解析（目录里保留 `node_modules`，或先 `npm install --legacy-peer-deps`） |
+| npm 包名 | `dsh-beacon` | **暂不可用**，见下 |
+
+安装/升级后按页面提示重启（「更改将在下次启动生效」），再到插件详情里填 `webhookUrl`。
+
+> ⚠️ npm 上的 `dsh-beacon` 已被他人占用（预留名，非本项目），因此**不能以该名字发布到 npm**。
+> 本项目的分发渠道是 GitHub 仓库与 Release 附件里的 `.tgz`。若将来要发 npm，需先改成带 scope 的包名
+> （如 `@hmilyld/dsh-beacon`），届时 `cordis.patch.yml` 的 `name:` 与客户端 `BUNDLE_KEY` 要同步改成该包名
+> （`ENTRY_ID` / 设置命名空间仍是 Loader 条目 id `dsh-beacon`，不变）。
 
 ## 配置
 
@@ -134,7 +162,7 @@ npm run send-test                # 可选：向真实端点发四类事件（见
 `npm run build` = `tsc`（宿主 → `lib/`）+ `npm run build:client`（esbuild 打包浏览器半边 → `lib/client.js`）。
 改代码后重启一次 DSH 即可（pnpm `link:` 符号链接，无需重装）。
 
-冒烟测试（`scripts/smoke-test.mjs`）用假 ctx 加载编译产物，配合本地 HTTP server 验证：各触发路径、去重、waterfall `next()` 透传、兜底取消、子代理过滤、`triggerOnUserQuestion` 只拦提问、schema 默认值与时间格式、summary 截断、非法模板跳过、非 2xx 告警、空 URL 不发送、全字段 volatile、模拟 `_commitVolatile` 的热更新、客户端 bundle 的 ModuleLoader 包装与导出，以及卸载清理。
+冒烟测试（`scripts/smoke-test.mjs`，76 项）用假 ctx 加载编译产物，配合本地 HTTP server 验证：各触发路径、去重、waterfall `next()` 透传、兜底取消、子代理过滤、`triggerOnUserQuestion` 只拦提问、schema 默认值与时间格式、summary 截断、非法模板跳过、非 2xx 告警、空 URL 不发送、全字段 volatile、模拟 `_commitVolatile` 的热更新、客户端 bundle 的 ModuleLoader 包装与导出、卸载清理，以及发版元数据（peer 依赖 / repository / files / LICENSE）。
 
 真实端点联调（`scripts/send-test.mjs`）的结构是「插件 → 本地代理（记录 + 原样转发）→ 真实接口」，
 依次发送四类事件、打印上游返回，并以「上游全部 2xx」判定成功。它需要一份 git-ignored 的配置：
@@ -148,6 +176,39 @@ npm run send-test
 - `targetUrl`：必填，真实接收端；也可用环境变量 `DSH_BEACON_TEST_URL` 代替。
 - `payloadTemplate`：可选，省略时用插件内置的默认模板（`DEFAULT_PAYLOAD_TEMPLATE`）。
 
+## 发版
+
+`package.json` 里声明了针对 `@deepseek-ai/dsh-*` 的 `peerDependencies`（当前 `0.2.0-rc.2`）——
+插件管理器只认这个字段做 DSH 版本兼容判定，DSH 大版本变更时应同步上调。
+
+发一个版本：
+
+```bash
+# 1. 更新 CHANGELOG.md 与版本号（npm version 会自动打 tag）
+npm version patch   # 或 minor / major
+
+# 2. 推送提交与标签，触发 .github/workflows/release.yml
+git push --follow-tags
+```
+
+标签推送后，`release.yml` 会校验「标签 == package.json 版本」，跑 typecheck 与冒烟测试，
+`npm pack` 出带预构建 `lib/` 的 `.tgz`，并创建对应 GitHub Release 把该 `.tgz` 作为附件。
+用户随后可以：
+
+```bash
+dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.1.0
+```
+
+或在桌面版插件管理页填该 GitHub 地址 / Release 附件的 `.tgz` 绝对路径。
+
+> npm 发布暂不可用：`dsh-beacon` 这个名字已被他人占用（见「安装」一节）。改用带 scope 的包名后，
+> 把 `publishConfig` 保留即可 `npm publish --access public`（`prepublishOnly` 会先跑 typecheck + 测试）。
+> CI 见 `.github/workflows/ci.yml`（main 推送与 PR 上跑 typecheck + 冒烟测试）。
+
+## 许可
+
+[MIT](LICENSE) © 2026 hmilyld。
+
 ## 目录结构
 
 ```
@@ -160,9 +221,13 @@ scripts/send-test.config.json    联调配置（git-ignored，需自建）
 cordis.patch.yml                 bundle 层：安装时向 profile 插入插件行
 examples/profile.cordis.patch.yml 配置示例（profile 层按 id 覆盖）
 examples/send-test.config.example.json 联调配置示例
+.github/workflows/ci.yml         CI：typecheck + 冒烟测试
+.github/workflows/release.yml    发版：校验标签 → 打包 → GitHub Release
+CHANGELOG.md                     版本历史
+LICENSE                          MIT
 tsconfig.json                    NodeNext / strict / 宿主输出 lib
 tsconfig.client.json             Bundler / react-jsx / noEmit，客户端类型检查
 lib/                             构建产物：index.js / index.d.ts（tsc）+ client.js（esbuild）
 ```
 
-> `lib/` 是 `npm run build` 的产物，已 git-ignore；发布到 npm 时由 `package.json` 的 `files` 字段带上 `lib` 与 `cordis.patch.yml`。
+> `lib/` 是 `npm run build` 的产物，已 git-ignore；打包/发布时由 `package.json` 的 `files` 字段带上 `lib` 与 `cordis.patch.yml`。

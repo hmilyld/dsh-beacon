@@ -508,6 +508,24 @@ ok(
 )
 ok(pkg.exports?.['./client']?.default === './lib/client.js', 'exports["./client"] 指向 lib/client.js')
 
+// 21b. 发版元数据：插件管理器只认 peerDependencies 里的 @deepseek-ai/dsh* 做版本兼容判定，
+//      仓库 / 许可 / files 是公开发布的必要信息。
+const dshPeers = Object.keys(pkg.peerDependencies ?? {}).filter(
+  (peer) => peer === '@deepseek-ai/dsh' || peer.startsWith('@deepseek-ai/dsh-'),
+)
+ok(dshPeers.length > 0, `声明 DSH peer 依赖（兼容性门禁）：${dshPeers.join(', ') || '缺失'}`)
+ok(pkg.publishConfig?.access === 'public', 'package.json 声明 publishConfig.access = public')
+ok(
+  typeof pkg.repository?.url === 'string' && pkg.repository.url.includes('github.com/hmilyld/dsh-beacon'),
+  'package.json 声明 repository 指向公开仓库',
+)
+ok(
+  Array.isArray(pkg.files) && pkg.files.includes('lib') && pkg.files.includes('cordis.patch.yml'),
+  'package.json 的 files 带上 lib 与 cordis.patch.yml',
+)
+const licenseSource = await readFile(new URL('../LICENSE', import.meta.url), 'utf8').catch(() => null)
+ok(licenseSource?.includes('MIT License') === true, '仓库根存在 MIT LICENSE')
+
 let clientSource = null
 try {
   clientSource = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
