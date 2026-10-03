@@ -5,6 +5,20 @@
 
 ## [未发布]
 
+## [0.2.0] - 2026-10-03
+
+### 变更
+
+- 包名由 `dsh-beacon` 改为 **`@hmilyld/dsh-beacon`**：npm 上的 `dsh-beacon` 已被他人占用，
+  改用带 scope 的名字才能发布。Loader 条目 id 与设置命名空间仍是 `dsh-beacon`，**已保存的配置不受影响**。
+- 发版流程加入 npm 发布（GitHub Actions，`id-token: write` + `--provenance`）：
+  需在仓库配置 secret `NPM_TOKEN`；未配置时自动跳过，GitHub Release 照常创建。
+
+### 新增
+
+- `peerDependencies` 声明 `@deepseek-ai/dsh-*`（`0.2.0-rc.2`），供插件管理器做版本兼容判定。
+- `prepublishOnly`（typecheck + 冒烟测试）与 CI / Release 两个工作流。
+
 ## [0.1.0] - 2026-10-03
 
 首个版本。
@@ -21,5 +35,6 @@
 - fire-and-forget 发送：模板渲染、fetch、日志全部 `try/catch`，webhook 故障不影响 agent 主循环。
 - 冒烟测试（76 项）与真实端点联调脚本（`npm run send-test`）。
 
-[未发布]: https://github.com/hmilyld/dsh-beacon/compare/v0.1.0...HEAD
+[未发布]: https://github.com/hmilyld/dsh-beacon/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.2.0
 [0.1.0]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.1.0

@@ -1,20 +1,28 @@
 name: Release
 
-# 打 v* 标签即发版：校验标签与 package.json 版本一致，构建并跑测试，
-# 然后把带预构建 lib/ 的 .tgz 作为 GitHub Release 附件发布。
+# 打 v* 标签即发版：校验标签与 package.json 版本一致 → 构建并跑测试 →
+# 发布到 npm（需仓库 secret NPM_TOKEN，带 provenance）→ 把带预构建 lib/ 的
+# .tgz 作为 GitHub Release 附件发布。
 #
-# 安装端可以直接用该标签或附件：
-#   dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.1.0
+# 未配置 NPM_TOKEN 时跳过 npm 发布（GitHub Release 照常创建）；配置后重跑本
+# 工作流即可补发。
+#
+# 安装端：
+#   dsh plugin --profile <name> add @hmilyld/dsh-beacon            # npm
+#   dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.2.0
 on:
   push:
     tags: ['v*']
 
 permissions:
   contents: write
+  id-token: write # npm provenance（npm publish --provenance）
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v5
 
@@ -22,6 +30,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          registry-url: https://registry.npmjs.org
 
       - name: Verify tag matches package.json version
         run: |
@@ -40,14 +49,27 @@ jobs:
       - name: Smoke test
         run: npm test
 
+      # prepare（构建 lib/）与 prepublishOnly（typecheck + 测试）会在这里再跑一遍。
+      - name: Publish to npm
+        if: env.NPM_TOKEN != ''
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
+
+      - name: Skip npm publish
+        if: env.NPM_TOKEN == ''
+        run: |
+          echo "::notice::未配置 NPM_TOKEN，已跳过 npm 发布；配置后重跑本工作流即可补发 \
+          $(node -p "require('./package.json').name")@$(node -p "require('./package.json').version")"
+
       # npm pack 会先跑 prepare（tsc + esbuild），附件里因此带有 lib/。
-      - name: Pack
+      - name: Pack release artifact
         run: npm pack
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dsh-beacon-*.tgz \
+          gh release create "$GITHUB_REF_NAME" ./*.tgz \
             --title "$GITHUB_REF_NAME" \
             --generate-notes

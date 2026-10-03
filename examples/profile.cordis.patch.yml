@@ -6,11 +6,13 @@
 #
 # patch 按 id 覆盖的是整行 config（官方无深合并层）。省略的字段会回落到
 # 插件 schema 的默认值，所以最小配置只写 webhookUrl 即可；下面给出全部字段。
+# 注意这里覆盖的是 Loader 条目 id `dsh-beacon`（= 设置命名空间），与包名
+# `@hmilyld/dsh-beacon` 无关，包名带 scope 也不影响本文件。
 #
 # 六个字段全部声明为 volatile，YAML 改动保存后即热生效、无需重启 DSH；
-# 也可以完全不在这里写，直接在 DSH「插件管理页 → dsh-beacon 详情」里配置。
+# 也可以完全不在这里写，直接在 DSH「插件管理页 → @hmilyld/dsh-beacon 详情」里配置。
 # 用 `dsh --profile <name> --dump-config` 检查组合结果
-#（应能看到 "# == dsh-beacon" 层）。
+#（应能看到 "# == @hmilyld/dsh-beacon" 层）。
 
 - id: dsh-beacon
   config:

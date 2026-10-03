@@ -82,10 +82,16 @@ declare module '@deepseek-ai/cordis' {
 
 // ---------------------------------------------------------------- 常量与文案
 
-/** Loader 条目 id = 设置命名空间 = 插件包名（三者恰好一致）。 */
+/**
+ * Loader 条目 id，也就是设置命名空间：`dsh-settings` 以 `entry.options.id`
+ * 作为 ns（见其源码），所以它取自 `cordis.patch.yml` 的 `id:`，与包名无关。
+ */
 const ENTRY_ID = 'dsh-beacon'
-/** `plugins.bundle.config` 的键：bundle 的包名。 */
-const BUNDLE_KEY = 'dsh-beacon'
+/**
+ * `plugins.bundle.config` 的键：bundle 的**包名**。插件管理页用
+ * `ledger.bundles.has(pkg.name)` 匹配，所以这里必须是 package.json 的 name。
+ */
+const BUNDLE_KEY = '@hmilyld/dsh-beacon'
 /** 注册的插槽名。 */
 const CONFIG_SLOT = 'plugins.bundle.config'
 

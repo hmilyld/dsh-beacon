@@ -526,6 +526,19 @@ ok(
 const licenseSource = await readFile(new URL('../LICENSE', import.meta.url), 'utf8').catch(() => null)
 ok(licenseSource?.includes('MIT License') === true, '仓库根存在 MIT LICENSE')
 
+// 21c. 包名与 bundle 层的一致性：`name` = package.json 的包名（Loader 按它解析），
+//      `id` 固定为 dsh-beacon（= 设置命名空间，改名会丢掉用户已保存的配置）。
+const patchSource = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
+ok(pkg.name === '@hmilyld/dsh-beacon', `包名为 scoped 名：${pkg.name}`)
+ok(
+  patchSource.includes(`name: '${pkg.name}'`),
+  'cordis.patch.yml 的 name 与 package.json 的 name 一致',
+)
+ok(
+  /^\s+- id: dsh-beacon$/m.test(patchSource),
+  'cordis.patch.yml 的 Loader 条目 id 仍为 dsh-beacon（设置命名空间不变）',
+)
+
 let clientSource = null
 try {
   clientSource = await readFile(new URL('../lib/client.js', import.meta.url), 'utf8')
@@ -545,7 +558,7 @@ if (clientSource !== null) {
     console.error(`      lib/client.js 顶层执行失败：${err}`)
   }
   ok(registration !== null, 'lib/client.js 通过 window.__ModuleLoader__.load 注册')
-  ok(registration?.id === 'dsh-beacon', 'ModuleLoader id 与包名一致')
+  ok(registration?.id === '@hmilyld/dsh-beacon', 'ModuleLoader id = 包名（scoped）')
 
   // 平台 seed：react / react/jsx-runtime 是前端静态模块表提供的词，不打进产物。
   const seed = new Proxy({}, { get: () => () => null, has: () => true })

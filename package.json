@@ -1,6 +1,6 @@
 {
-  "name": "dsh-beacon",
-  "version": "0.1.0",
+  "name": "@hmilyld/dsh-beacon",
+  "version": "0.2.0",
   "description": "DSH (DeepSeek Harness) webhook beacon: POST a JSON payload with variable substitution when a task completes or the agent needs user questions, plan confirmation, or approval.",
   "type": "module",
   "main": "lib/index.js",

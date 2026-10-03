@@ -5,7 +5,7 @@ DSH（DeepSeek Harness）Web 插件：当**任务完成**，或 Agent 需要用�
 - 技术栈：TypeScript + `@deepseek-ai/cordis`（插件/服务）+ `@deepseek-ai/schemastery`（Config schema）+ `@deepseek-ai/cosmokit`（`isVolatile` 判定）（对照 DSH `0.2.0-rc.2` 类型包开发）。
 - 所有发送均为 fire-and-forget：模板渲染、fetch、日志全部 `try/catch` 包裹，**webhook 故障绝不影响 agent 主循环**。
 - 未配置 `webhookUrl` 时不发送任何请求（监听仍注册，填上地址**热保存即生效**）。
-- 配置既可在 **profile 的 YAML** 里写，也可在 **DSH 界面**里改（插件管理页 → dsh-beacon 详情），见下文「配置」。
+- 配置既可在 **profile 的 YAML** 里写，也可在 **DSH 界面**里改（插件管理页 → `@hmilyld/dsh-beacon` 详情），见下文「配置」。
 
 ## 触发的事件
 
@@ -25,14 +25,17 @@ DSH（DeepSeek Harness）Web 插件：当**任务完成**，或 Agent 需要用�
 
 ## 安装
 
-仓库公开，无需任何凭据：
+npm 包名为 **`@hmilyld/dsh-beacon`**；仓库名为 `hmilyld/dsh-beacon`（两者不同，见下）。
 
 ```bash
+# npm 安装（推荐，可带版本号）
+dsh plugin --profile <name> add @hmilyld/dsh-beacon
+
 # GitHub 安装（prepare 脚本自动执行 tsc + esbuild 构建 lib/）
 dsh plugin --profile <name> add github:hmilyld/dsh-beacon
 
 # 锁到某个发布标签
-dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.1.0
+dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.2.0
 
 # 本地 checkout（pnpm link: 符号链接，需先自行 npm install + npm run build）
 dsh plugin --profile <name> add /path/to/dsh-beacon
@@ -41,12 +44,17 @@ dsh plugin --profile <name> add /path/to/dsh-beacon
 > pnpm 默认拦下安装脚本（本包的 `prepare` 与 esbuild 的安装脚本）。首次安装若被拦，
 > 按 pnpm 提示把包名加入 `profiles/<name>/pnpm-workspace.yaml` 的 `allowBuilds` 后重试；
 > 在桌面版插件管理页里则是点「允许这些脚本并重试」。
+> 从 npm 装的是已构建好的包，不触发 `prepare`。
 
 安装会把本包的 bundle 层（`cordis.patch.yml`）加入 profile。验证组合结果：
 
 ```bash
-dsh --profile <name> --dump-config   # 应能看到 "# == dsh-beacon" 层
+dsh --profile <name> --dump-config   # 应能看到 "# == @hmilyld/dsh-beacon" 层
 ```
+
+> 包名与 Loader 条目 id 是两个东西：包名是 `@hmilyld/dsh-beacon`，而 `cordis.patch.yml`
+> 里的条目 `id`（= 设置命名空间）固定为 `dsh-beacon`。所以 profile 里按 id 覆盖配置、
+> 以及界面上已保存的配置，都不会因为包名带 scope 而失效。
 
 ### 在 DSH 桌面版里安装
 
@@ -56,23 +64,22 @@ dsh --profile <name> --dump-config   # 应能看到 "# == dsh-beacon" 层
 
 | 来源 | 填法 | 说明 |
 | --- | --- | --- |
-| GitHub 仓库地址 | `github:hmilyld/dsh-beacon` | 最省事；需要那台机器能直连 github.com 或配好代理，装完按提示允许安装脚本 |
-| 压缩包 | `npm pack` 产出的 `dsh-beacon-<版本>.tgz` 的**绝对路径** | 包内已带 `lib/`，不触发构建脚本；适合离线或网络受限的机器 |
+| npm 包名 | `@hmilyld/dsh-beacon` | 最省事，走 npm 源（可切国内镜像）；装的是已构建产物 |
+| GitHub 仓库地址 | `github:hmilyld/dsh-beacon` | 需要那台机器能直连 github.com 或配好代理，装完按提示允许安装脚本 |
+| 压缩包 | `npm pack` 产出的 `hmilyld-dsh-beacon-<版本>.tgz` 的**绝对路径** | 包内已带 `lib/`，不触发构建脚本；适合离线或网络受限的机器 |
 | 本地目录 | 解压/克隆后的目录**绝对路径** | 该目录需自带 `lib/` 且运行时依赖可解析（目录里保留 `node_modules`，或先 `npm install --legacy-peer-deps`） |
-| npm 包名 | `dsh-beacon` | **暂不可用**，见下 |
 
 安装/升级后按页面提示重启（「更改将在下次启动生效」），再到插件详情里填 `webhookUrl`。
 
-> ⚠️ npm 上的 `dsh-beacon` 已被他人占用（预留名，非本项目），因此**不能以该名字发布到 npm**。
-> 本项目的分发渠道是 GitHub 仓库与 Release 附件里的 `.tgz`。若将来要发 npm，需先改成带 scope 的包名
-> （如 `@hmilyld/dsh-beacon`），届时 `cordis.patch.yml` 的 `name:` 与客户端 `BUNDLE_KEY` 要同步改成该包名
-> （`ENTRY_ID` / 设置命名空间仍是 Loader 条目 id `dsh-beacon`，不变）。
+> npm 上的 `dsh-beacon`（不带 scope）已被他人占用，所以本项目发布在 `@hmilyld/dsh-beacon`。
+> 该 scope 必须与你的 npm 账号或组织一致；若 npm 用户名不是 `hmilyld`，需要把
+> `package.json` 的 `name`、`cordis.patch.yml` 的 `name:` 与客户端 `BUNDLE_KEY` 三处一起改成你的 scope。
 
 ## 配置
 
 ### 方式一：界面上配置（推荐）
 
-打开 DSH 的**插件管理页** → 找到 `dsh-beacon` → 点开详情，即可编辑六个配置项并保存。
+打开 DSH 的**插件管理页** → 找到 `@hmilyld/dsh-beacon` → 点开详情，即可编辑六个配置项并保存。
 
 - 表单由插件自带的客户端半边（`src/client/index.tsx` → `lib/client.js`）渲染，挂在官方的 `plugins.bundle.config` 插槽上，位于 bundle 描述与 rows 之间。
 - 编辑先暂存，**点「保存」才写回**；离开页面自动丢弃未保存的改动。字段旁的「已覆盖默认值 / 恢复默认」标出哪些值是自己改过的。
@@ -111,7 +118,7 @@ $DSH_HOME/profiles/<name>/cordis.patch.yml     # $DSH_HOME 默认 ~/.dsh
 
 > ⚠️ 官方 patch 语义是**按 id 覆盖整行 config**（没有深合并层）。省略的字段会回落到插件 schema 的默认值，所以只写 `webhookUrl` 即可工作；但改配置时不要假设未写的字段还保留 bundle 层的值。
 >
-> `webhookUrl` 属于私密地址（等同密钥），勿提交进公开仓库；含密钥时可用官方 `!!js` 表达式从环境变量读取（示例文件末尾）。YAML 改动**保存后即热生效**，无需重启 DSH（若偏好重启，`dsh --profile <name> --dump-config` 可检查组合结果，应能看到 `# == dsh-beacon` 层）。
+> `webhookUrl` 属于私密地址（等同密钥），勿提交进公开仓库；含密钥时可用官方 `!!js` 表达式从环境变量读取（示例文件末尾）。YAML 改动**保存后即热生效**，无需重启 DSH（若偏好重启，`dsh --profile <name> --dump-config` 可检查组合结果，应能看到 `# == @hmilyld/dsh-beacon` 层）。
 
 ### 配置项
 
@@ -191,19 +198,36 @@ npm version patch   # 或 minor / major
 git push --follow-tags
 ```
 
-标签推送后，`release.yml` 会校验「标签 == package.json 版本」，跑 typecheck 与冒烟测试，
-`npm pack` 出带预构建 `lib/` 的 `.tgz`，并创建对应 GitHub Release 把该 `.tgz` 作为附件。
+标签推送后，`release.yml` 会校验「标签 == package.json 版本」，跑 typecheck 与冒烟测试，然后：
+
+1. **发布到 npm**（`npm publish --access public --provenance`，带构建来源证明）；
+2. `npm pack` 出带预构建 `lib/` 的 `.tgz`，创建 GitHub Release 并把它作为附件。
+
 用户随后可以：
 
 ```bash
-dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.1.0
+dsh plugin --profile <name> add @hmilyld/dsh-beacon           # npm
+dsh plugin --profile <name> add github:hmilyld/dsh-beacon#v0.2.0
 ```
 
-或在桌面版插件管理页填该 GitHub 地址 / Release 附件的 `.tgz` 绝对路径。
+或在桌面版插件管理页填包名 / GitHub 地址 / Release 附件的 `.tgz` 绝对路径。
 
-> npm 发布暂不可用：`dsh-beacon` 这个名字已被他人占用（见「安装」一节）。改用带 scope 的包名后，
-> 把 `publishConfig` 保留即可 `npm publish --access public`（`prepublishOnly` 会先跑 typecheck + 测试）。
-> CI 见 `.github/workflows/ci.yml`（main 推送与 PR 上跑 typecheck + 冒烟测试）。
+### npm 发布的一次性配置
+
+发布需要仓库 secret `NPM_TOKEN`（npm automation token，勾选 publish 权限）：
+
+```bash
+# 在 https://www.npmjs.com/settings/<你的用户名>/tokens 生成 Automation token
+gh secret set NPM_TOKEN --repo hmilyld/dsh-beacon
+```
+
+- 未配置该 secret 时，工作流会**跳过 npm 发布**并打一条 notice，GitHub Release 照常创建；
+  配好之后在 Actions 里 **Re-run** 该次运行即可补发。
+- scope `@hmilyld` 必须属于你的 npm 账号或组织，否则发布会 403；npm 用户名不同的话，
+  按「安装」一节的说明改三处名字。
+- 首次发布带 scope 的包需要 `--access public`（已通过 `publishConfig` + 命令行显式给出）。
+
+CI 见 `.github/workflows/ci.yml`（main 推送与 PR 上跑 typecheck + 冒烟测试）。
 
 ## 许可
 
