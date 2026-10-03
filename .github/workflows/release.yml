@@ -58,9 +58,19 @@ jobs:
       - name: Smoke test
         run: npm test
 
+      # 临时诊断：确认 id-token 权限是否真的下发，并让 npm 打印 OIDC 细节。
+      - name: Diagnose OIDC environment
+        run: |
+          echo "node: $(node --version)"
+          echo "npm:  $(npm --version)"
+          [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && echo "ID_TOKEN_REQUEST_URL: present" || echo "ID_TOKEN_REQUEST_URL: MISSING"
+          [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ] && echo "ID_TOKEN_REQUEST_TOKEN: present" || echo "ID_TOKEN_REQUEST_TOKEN: MISSING"
+
       # prepare（构建 lib/）与 prepublishOnly（typecheck + 测试）会在这里再跑一遍。
       # OIDC 下 provenance 自动生成，无需 --provenance。
       - name: Publish to npm (trusted publishing)
+        env:
+          NPM_CONFIG_LOGLEVEL: silly
         run: npm publish --access public
 
       # npm pack 会先跑 prepare（tsc + esbuild），附件里因此带有 lib/。
