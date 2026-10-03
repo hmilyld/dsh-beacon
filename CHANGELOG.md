@@ -5,11 +5,15 @@
 
 ## [未发布]
 
+## [0.2.1] - 2026-10-03
+
 ### 变更
 
 - npm 发布改用 **Trusted Publishing（OIDC）**，不再使用 `NPM_TOKEN` secret。
   原因：npm 正在淘汰 bypass-2FA 的 granular token，2026-07 起其已不能做账号/包管理，
   官方公告 2027-01 起连 direct publish 也会取消。
+- `package-lock.json` 的 `resolved` 全部改为官方 registry：此前被本机的镜像配置
+  （`registry.npmmirror.com`）写进了 lock，公开仓库不应固化第三方镜像地址。
 
 ## [0.2.0] - 2026-10-03
 
@@ -38,7 +42,8 @@
 - 六个 `volatile` 配置项，可在插件管理页或 profile patch 中配置，保存后热生效、无需重启。
 - 客户端半边：插件管理页 `plugins.bundle.config` 插槽上的配置表单（暂存 + 保存 + 恢复默认）。
 - fire-and-forget 发送：模板渲染、fetch、日志全部 `try/catch`，webhook 故障不影响 agent 主循环。
-- 冒烟测试（76 项）与真实端点联调脚本（`npm run send-test`）。
+- 冒烟测试（`npm test`）与真实端点联调脚本（`npm run send-test`）。
 
-[未发布]: https://github.com/hmilyld/dsh-beacon/compare/v0.2.0...HEAD
+[未发布]: https://github.com/hmilyld/dsh-beacon/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.2.1
 [0.2.0]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.2.0
