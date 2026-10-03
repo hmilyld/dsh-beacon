@@ -19,9 +19,9 @@
 - `peerDependencies` 声明 `@deepseek-ai/dsh-*`（`0.2.0-rc.2`），供插件管理器做版本兼容判定。
 - `prepublishOnly`（typecheck + 冒烟测试）与 CI / Release 两个工作流。
 
-## [0.1.0] - 2026-10-03
+## 0.1.0 - 2026-10-03
 
-首个版本。
+首个版本。**未发布到 npm**：包名随 0.2.0 改为 `@hmilyld/dsh-beacon`，原 tag 与 Release 已删除。
 
 ### 新增
 
@@ -37,4 +37,3 @@
 
 [未发布]: https://github.com/hmilyld/dsh-beacon/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.2.0
-[0.1.0]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.1.0
