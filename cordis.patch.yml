@@ -1,0 +1,11 @@
+# dsh-beacon bundle 层：`dsh plugin add` 本包时把插件行插入 profile 组合
+# （package.json 的 dsh.bundle.patch 指向本文件）。
+#
+# webhookUrl 默认留空——插件安全停用，装完不配置也不会误发。
+# 请在 profile 的 cordis.patch.yml 按 id 覆盖该行填入真实地址，
+# 完整示例见 examples/profile.cordis.patch.yml。
+- insert:
+    - id: dsh-beacon
+      name: dsh-beacon
+      config:
+        webhookUrl: ''

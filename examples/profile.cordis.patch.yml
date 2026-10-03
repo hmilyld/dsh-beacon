@@ -1,0 +1,55 @@
+# dsh-beacon 配置示例
+#
+# 把下面这段合并进 profile 的 cordis.patch.yml：
+#   $DSH_HOME/profiles/<profile名>/cordis.patch.yml
+# （$DSH_HOME 默认 ~/.dsh；机器级通用配置也可放在 $DSH_HOME/cordis.patch.yml）
+#
+# patch 按 id 覆盖的是整行 config（官方无深合并层）。省略的字段会回落到
+# 插件 schema 的默认值，所以最小配置只写 webhookUrl 即可；下面给出全部字段。
+#
+# 六个字段全部声明为 volatile，YAML 改动保存后即热生效、无需重启 DSH；
+# 也可以完全不在这里写，直接在 DSH「插件管理页 → dsh-beacon 详情」里配置。
+# 用 `dsh --profile <name> --dump-config` 检查组合结果
+#（应能看到 "# == dsh-beacon" 层）。
+
+- id: dsh-beacon
+  config:
+    # 【必填】接收 webhook 的 URL（POST 目标）。留空则不发送任何请求
+    #（监听仍注册，之后在界面上补填地址保存即生效）。
+    # webhookUrl 属于私密地址（等同密钥），请勿提交进公开仓库。
+    webhookUrl: 'https://example.com/api/dsh-beacon'
+
+    # 【可选】JSON 模板。可用变量：
+    #   {{eventType}}  事件类型：task_completed / user_question /
+    #                  plan_confirmation / approval_request
+    #   {{summary}}    事件摘要（任务完成=最后一条 assistant 文本；
+    #                  提问=问题与选项；审批=工具名与原因），截断至 200 字符
+    #   {{sessionId}}  会话 id
+    #   {{time}}       发送时刻（YYYY-MM-DD HH:mm:ss，本地时区，无 T）
+    # 模板渲染后必须是合法 JSON，否则该次发送被跳过并记录错误日志。
+    payloadTemplate: '{"event": "{{eventType}}", "success": true, "msg": "{{summary}}", "sessionId": "{{sessionId}}", "time": "{{time}}"}'
+
+    # 【可选】随请求发送的 HTTP 请求头。界面上以 JSON 文本编辑，
+    # 如 {"Content-Type":"application/json"}。
+    headers:
+      Content-Type: application/json
+      # Authorization: Bearer your-token
+
+    # 【可选，默认 true】Agent 向用户提问（user_question）时是否发送。
+    # 计划确认（plan_confirmation）与审批（approval_request）不受此开关影响。
+    triggerOnUserQuestion: true
+
+    # 【可选，默认 5000】幂等去重窗口（毫秒）：同一会话同一事件类型在窗口内
+    # 只发一次，主路径与各兜底路径靠它合并成一次通知。
+    dedupWindowMs: 5000
+
+    # 【可选，默认 true】是否跳过子代理（origin === 'subagent'）的任务完成
+    # 与工具路径通知。审批与提问不在此列——它们在等真人拍板，一律发送。
+    skipSubagents: true
+
+# 进阶：webhookUrl 含密钥时，可用 DSH 官方支持的 !!js 表达式从环境变量读取
+# （base bundle 中 disabled: !!js process.platform === 'win32' 即此语法）：
+#
+# - id: dsh-beacon
+#   config:
+#     webhookUrl: !!js process.env.DSH_BEACON_URL ?? ''

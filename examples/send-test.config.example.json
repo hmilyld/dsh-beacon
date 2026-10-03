@@ -1,0 +1,4 @@
+{
+  "targetUrl": "https://example.com/api/dsh-beacon",
+  "payloadTemplate": "{\"event\": \"{{eventType}}\", \"success\": true, \"msg\": \"{{summary}}\", \"sessionId\": \"{{sessionId}}\", \"time\": \"{{time}}\"}"
+}
