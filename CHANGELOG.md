@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [0.2.2] - 2026-10-19
+
+### 变更
+
+- `peerDependencies` 里的 DSH 版本不再**精确锁死**在单个 `0.2.0-rc.2`，改为
+  `^0.2.0-rc.2`（一段 0.2.x 范围）。DSH 的 `evaluatePluginCompatibility` 以
+  `includePrerelease` 判定，这段范围会一并接纳 `0.2.1-rc.*` 等预发布版本，只在升到
+  `0.3.0` 时才判定不兼容——此前 DSH 升级到 0.2.1 后，插件会被这道兼容门禁拦下。
+- `devDependencies` 的 `@deepseek-ai/dsh-*` 由 `^0.2.0-rc.2` 上调到 `^0.2.1-rc.2`，
+  类型检查与冒烟测试对照 `0.2.1-rc.2` 验证通过。
+
 ## [0.2.1] - 2026-10-03
 
 ### 变更
@@ -44,6 +55,7 @@
 - fire-and-forget 发送：模板渲染、fetch、日志全部 `try/catch`，webhook 故障不影响 agent 主循环。
 - 冒烟测试（`npm test`）与真实端点联调脚本（`npm run send-test`）。
 
-[未发布]: https://github.com/hmilyld/dsh-beacon/compare/v0.2.1...HEAD
+[未发布]: https://github.com/hmilyld/dsh-beacon/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.2.2
 [0.2.1]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.2.1
 [0.2.0]: https://github.com/hmilyld/dsh-beacon/releases/tag/v0.2.0

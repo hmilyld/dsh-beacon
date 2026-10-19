@@ -4,7 +4,7 @@
  * 当 DSH 任务完成，或 Agent 需要用户选择 / 确认 / 审批时，向配置的 URL
  * 发送一次带变量替换的 JSON POST webhook。
  *
- * 触发点（对照 DSH 0.2.0-rc.2 类型包源码验证）：
+ * 触发点（对照 DSH 0.2.1-rc.2 类型包源码验证）：
  *   1. `agent/status` → `idle`：任务完成的权威信号（一轮结束、driver 归空）。
  *   2. `session/event` → `turn/end`：完成信号的兜底——仅当拿不到该 agent 的
  *      `agent/status`（如插件中途加载）时延迟 1s 发送，期间一旦出现权威

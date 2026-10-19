@@ -41,8 +41,9 @@ import type {
 
 /**
  * 本包只声明自己用得到的两个服务形状，不去 import 官方客户端包的类型：
- * `@deepseek-ai/dsh-api-remotes`（ui-settings 的类型链依赖它）没有与
- * 0.2.0-rc.2 同步的发布版本。两者都是结构化子集，运行时传进来的对象是超集。
+ * `dsh-client-ui-settings` 的类型链会牵出 `@deepseek-ai/dsh-api-remotes`（本包不依赖），
+ * 手写结构化子集可让插件与具体客户端包解耦、不随其类型链断裂。两者都是结构化子集，
+ * 运行时传进来的对象是超集。
  */
 interface SlotEntryOptions {
   name: string

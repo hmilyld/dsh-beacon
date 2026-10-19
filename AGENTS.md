@@ -13,7 +13,7 @@
 | 客户端 | `src/client/index.tsx` | `lib/client.js` | 插件管理页上的配置表单 |
 
 技术栈：TypeScript + `@deepseek-ai/cordis`（插件/服务）+ `@deepseek-ai/schemastery`（Config schema）
-+ `@deepseek-ai/cosmokit`（`isVolatile`）。开发对照 DSH `0.2.0-rc.2` 的类型包。
++ `@deepseek-ai/cosmokit`（`isVolatile`）。开发对照 DSH `0.2.1-rc.2` 的类型包。
 
 ## 关键标识符（改名或换 scope 时必须同步）
 
@@ -99,8 +99,9 @@ lib/                             构建产物，git-ignored
   宿主没提供该命名空间时页面上不留痕迹。
 - 表单模型与宿主 fiber 同生命周期：`ctx.effect(() => () => controller.dispose())`；
   `form.bind()` 只调一次并复用（反复 bind 会在同一个 form 上叠加订阅）。
-- 服务类型是**手写的结构化子集**，不 import 官方客户端包：`@deepseek-ai/dsh-api-remotes`
-  没有与 `0.2.0-rc.2` 同步的发布版本，`dsh-client-ui-settings` 的类型链会断。
+- 服务类型是**手写的结构化子集**，不 import 官方客户端包：`dsh-client-ui-settings`
+  的类型链会牵出 `@deepseek-ai/dsh-api-remotes`（本包不依赖它），手写子集让插件与
+  具体客户端包解耦、不随其类型链断裂。两者都是结构化子集，运行时传进来的对象是超集。
 - 字段控件：`webhookUrl` / `dedupWindowMs` 用官方 `SettingsValueField`；
   `payloadTemplate` / `headers` 用自写的 `TextareaField`（官方控件只有单行 input）；
   两个布尔值用 `Switch` + 自写 `ToggleField`。内联样式抄自 primitives 的 `fields.module.css`，
@@ -146,9 +147,13 @@ npm run send-test
 
 ### 版本与兼容性
 
-- `package.json` 的 `peerDependencies` 声明 `@deepseek-ai/dsh-*`（当前 `0.2.0-rc.2`）。
-  DSH 插件管理器**只认这个字段**做版本兼容判定（`evaluatePluginCompatibility` 只看
-  `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*`），DSH 版本变更时必须同步上调。
+- `package.json` 的 `peerDependencies` 把 `@deepseek-ai/dsh-*` 声明为 `^0.2.0-rc.2`
+  （一段 0.2.x 范围，**不要退回成精确版本**）。
+  DSH 插件管理器**只认这个字段**做版本兼容判定（`evaluatePluginCompatibility` 只解析
+  `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*`），且判定时带 `includePrerelease`：所以该范围
+  会一并接纳 `0.2.1-rc.*` 这类预发布版本，只在升到 `0.3.0` 时才算不兼容。DSH 出新的
+  0.2.x 时无需改这段范围；跨小版本（如 0.3）才需要重新评估。开发基准
+  （`devDependencies`）随最新 0.2.x 上调。
 - npm 包名 `@hmilyld/dsh-beacon`；`dsh-beacon`（不带 scope）已被他人占用，不要尝试改回去。
 
 ### 流程
