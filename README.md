@@ -1,3 +1,5 @@
+> **Development moved to [hmilyld/dsh-plugins](https://github.com/hmilyld/dsh-plugins). This repository is archived; install from npm (@hmilyld/dsh-beacon / @hmilyld/dsh-ocgo-usage-dock).**
+
 # dsh-beacon
 
 [![npm](https://img.shields.io/npm/v/@hmilyld%2Fdsh-beacon?label=npm&color=blue)](https://www.npmjs.com/package/@hmilyld/dsh-beacon)
